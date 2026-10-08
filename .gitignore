@@ -1,0 +1,8 @@
+# Ignore Java and Maven build directories
+target/
+**/target/
+*.class
+
+# Ignore IDE specific files
+.idea/
+*.iml

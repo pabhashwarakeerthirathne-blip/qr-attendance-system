@@ -3,57 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartQR - University Attendance Portal</title>
+    <title>SmartQR - Portal Selection</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col justify-between font-sans">
 
     <!-- Header -->
-    <header class="py-6 px-8 border-b border-slate-800 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <div class="bg-indigo-600 text-white p-2 rounded-lg font-bold text-xl">QR</div>
-            <span class="text-xl font-bold tracking-wide">SmartQR University System</span>
+    <header class="py-6 px-8 bg-white border-b border-gray-200">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <span class="font-semibold text-gray-800">SmartQR System</span>
+            <span class="text-xs text-gray-500">University Attendance</span>
         </div>
-        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 font-medium">System Online</span>
     </header>
 
     <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center px-4 py-12">
-        <div class="max-w-4xl w-full text-center">
-            <h1 class="text-4xl font-extrabold tracking-tight mb-4 text-white">Select Your Portal</h1>
-            <p class="text-slate-400 max-w-xl mx-auto mb-12">Choose the appropriate system module below to proceed with gate scanning or administrative management.</p>
+        <div class="max-w-md w-full bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
+            <h1 class="text-2xl font-bold mb-2 text-gray-800 text-center">System Portal</h1>
+            <p class="text-sm text-gray-600 mb-8 text-center">Please select your login portal to continue.</p>
 
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Super Admin Card -->
-                <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-8 hover:border-indigo-500 transition-all duration-300 flex flex-col justify-between shadow-xl">
-                    <div>
-                        <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-6 text-2xl font-bold">👑</div>
-                        <h2 class="text-2xl font-semibold mb-3 text-white">Super Admin Portal</h2>
-                        <p class="text-slate-400 text-sm mb-6">Manage student records, view full live attendance analytics, export CSV reports, and configure system rules.</p>
-                    </div>
-                    <a href="super-admin-login.html" class="w-full inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-600/20">
-                        Access Super Admin &rarr;
-                    </a>
-                </div>
-
-                <!-- Gate Scanner Card -->
-                <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-8 hover:border-emerald-500 transition-all duration-300 flex flex-col justify-between shadow-xl">
-                    <div>
-                        <div class="w-12 h-12 bg-emerald-600/20 text-emerald-400 rounded-xl flex items-center justify-center mx-auto mb-6 text-2xl font-bold">📱</div>
-                        <h2 class="text-2xl font-semibold mb-3 text-white">Gate Scanner & Attendance</h2>
-                        <p class="text-slate-400 text-sm mb-6">Launch the mobile camera QR code scanner for gate officers to log student entries and exits on the fly.</p>
-                    </div>
-                    <a href="scanner.html" class="w-full inline-block bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-lg shadow-emerald-600/20">
-                        Launch Scanner &rarr;
-                    </a>
-                </div>
+            <div class="space-y-4">
+                <a href="super-admin-login.html" class="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded transition-colors">
+                    Super Admin Login
+                </a>
+                <a href="admin-login.html" class="w-full block text-center bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-4 rounded transition-colors">
+                    Admin Login
+                </a>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="py-6 px-8 text-center text-slate-500 text-sm border-t border-slate-800">
-        &copy; 2026 SmartQR University Attendance System. All rights reserved.
+    <footer class="py-6 px-8 text-center text-gray-400 text-xs border-t border-gray-200 bg-white">
+        &copy; 2026 SmartQR University Attendance System
     </footer>
 
 </body>

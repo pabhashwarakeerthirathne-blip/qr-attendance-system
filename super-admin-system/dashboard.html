@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Super Admin Dashboard</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header><strong>SmartQR Super Admin</strong><button class="secondary" onclick="logout()">Logout</button></header>
+<main class="container"><h1>System Dashboard</h1><p id="userInfo" class="muted"></p>
+<div class="grid">
+<a class="action" href="scanner.html"><span>📷</span><strong>Scanner</strong><small>Scan QR cards</small></a>
+<a class="action" href="manual-entry.html"><span>⌨️</span><strong>Manual Entry</strong><small>Enter student number</small></a>
+<a class="action" href="attendance.html"><span>📋</span><strong>Attendance</strong><small>View records</small></a>
+<a class="action" href="reports.html"><span>📊</span><strong>Reports</strong><small>Attendance reports</small></a>
+</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script>
+<script>requireRole(['SUPER_ADMIN']).then(p=>userInfo.textContent=`Signed in as ${p.full_name}`)</script>
+</body></html>

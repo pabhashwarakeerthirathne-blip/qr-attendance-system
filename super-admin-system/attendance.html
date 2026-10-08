@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Attendance Records</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><a href="dashboard.html">← Dashboard</a><strong>Attendance</strong></header>
+<main class="container"><section class="card"><h1>Attendance Records</h1>
+
+<div class="card" style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    
+    <!-- Filter Controls -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div>
+            <label for="filterDate" style="font-weight: 500; margin-right: 5px; font-size: 14px;">Filter Date:</label>
+            <input type="date" id="filterDate" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <button id="applyFilterBtn" style="background: #007bff; color: white; border: none; padding: 7px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">Filter</button>
+        <button id="clearFilterBtn" style="background: #6c757d; color: white; border: none; padding: 7px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">Show All (Latest 100)</button>
+    </div>
+
+    <h3 style="margin-bottom: 15px;" id="tableTitle">Live Attendance Records</h3>
+    
+    <table style="width: 100%; border-collapse: collapse;" id="attendanceTable">
+        <thead>
+            <tr style="border-bottom: 2px solid #dee2e6; text-align: left;">
+                <th style="padding: 10px;">Student Number</th>
+                <th style="padding: 10px;">In Time</th>
+                <th style="padding: 10px;">Out Time</th>
+                <th style="padding: 10px;">Duration</th>
+                <th style="padding: 10px;">Status</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTableBody">
+            <!-- Data will load here automatically -->
+        </tbody>
+    </table>
+</div>
+</section></main>
+
+<!-- Load Supabase and shared configurations -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+// Helper function to calculate duration
+function calculateDuration(inTimeStr, outTimeStr) {
+    if (!outTimeStr) return 'Active (Inside)';
+    
+    const inTime = new Date(inTimeStr);
+    const outTime = new Date(outTimeStr);
+    const diffMs = outTime - inTime;
+
+    if (diffMs < 0) return 'Invalid';
+
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${diffHrs}h ${diffMins}m`;
+}
+
+async function loadAttendanceRecords(selectedDate = null) {
+    const tbody = document.getElementById('attendanceTableBody');
+    try {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 15px; text-align: center; color: #6c757d;">Loading records...</td></tr>';
+
+        // Ensure only Super Admins can fetch these records
+        await requireRole(['SUPER_ADMIN']);
+
+        // Base query
+        let query = supabase
+            .from('attendance')
+            .select(`
+                id,
+                in_time,
+                out_time,
+                students ( student_number )
+            `)
+            .order('in_time', { ascending: false });
+
+        // Apply date filter if selected, otherwise limit to 100 for speed
+        if (selectedDate) {
+            const startOfDay = `${selectedDate}T00:00:00`;
+            const endOfDay = `${selectedDate}T23:59:59`;
+            query = query.gte('in_time', startOfDay).lte('in_time', endOfDay);
+            document.getElementById('tableTitle').textContent = `Attendance Records for ${selectedDate}`;
+        } else {
+            query = query.limit(100);
+            document.getElementById('tableTitle').textContent = `Live Attendance Records (Latest 100)`;
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 15px; text-align: center; color: red;">Database Error: ${error.message}</td></tr>`;
+            console.error('Supabase query error:', error);
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 15px; text-align: center; color: #6c757d;">No attendance records found for this selection.</td></tr>';
+            return;
+        }
+
+        // Loop through records and insert them into the table
+        data.forEach(record => {
+            const studentNum = record.students ? record.students.student_number : 'Unknown';
+            const inTime = new Date(record.in_time).toLocaleString();
+            const outTime = record.out_time ? new Date(record.out_time).toLocaleString() : '---';
+            const duration = calculateDuration(record.in_time, record.out_time);
+            const status = record.out_time ? 'Completed' : 'Checked In';
+            const badgeColor = record.out_time ? '#6c757d' : '#28a745';
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #dee2e6';
+            tr.innerHTML = `
+                <td style="padding: 10px; font-weight: bold;">${studentNum}</td>
+                <td style="padding: 10px;">${inTime}</td>
+                <td style="padding: 10px;">${outTime}</td>
+                <td style="padding: 10px; font-weight: 500; color: #495057;">${duration}</td>
+                <td style="padding: 10px;"><span style="background: ${badgeColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding: 15px; text-align: center; color: red;">Script Error: ${err.message}</td></tr>`;
+        console.error('Failed to load records:', err);
+    }
+}
+
+// Event Listeners for Filters
+document.getElementById('applyFilterBtn').addEventListener('click', () => {
+    const dateVal = document.getElementById('filterDate').value;
+    if (!dateVal) {
+        alert('Please pick a date first!');
+        return;
+    }
+    loadAttendanceRecords(dateVal);
+});
+
+document.getElementById('clearFilterBtn').addEventListener('click', () => {
+    document.getElementById('filterDate').value = '';
+    loadAttendanceRecords(null);
+});
+
+// Run default load when page opens
+document.addEventListener('DOMContentLoaded', () => loadAttendanceRecords(null));
+</script>
+</body>
+</html>

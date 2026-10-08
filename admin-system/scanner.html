@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gate QR Scanner</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .scanner-container { max-width: 500px; margin: 20px auto; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        #reader { width: 100%; border-radius: 8px; overflow: hidden; border: none !important; }
+        #scanResult { margin-top: 15px; padding: 15px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 16px; display: none; }
+        .success-box { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-box { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+<header>
+    <a href="dashboard.html">← Dashboard</a>
+    <strong>Gate Scanner</strong>
+</header>
+
+<main class="container">
+    <div class="scanner-container">
+        <h2 style="margin-top: 0; font-size: 18px; text-align: center; color: #333;">Scan Student ID Card</h2>
+        <p id="sessionInfo" style="text-align: center; color: #6c757d; font-size: 13px; margin-bottom: 15px;"></p>
+        
+        <!-- Camera Viewfinder Container -->
+        <div id="reader"></div>
+
+        <!-- Feedback Box -->
+        <div id="scanResult"></div>
+    </div>
+</main>
+
+<!-- Load html5-qrcode library, Supabase, and configurations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    await requireRole(['ADMIN', 'SUPER_ADMIN']); // Protect the scanner page
+    // ... existing code
+});
+
+let html5QrcodeScanner = null;
+let isProcessing = false;
+
+// Extract session_id from Magic Link URL parameters (e.g. scanner.html?session_id=12345)
+const urlParams = new URLSearchParams(window.location.search);
+const sessionId = urlParams.get('session_id');
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Optional: Verify staff authorization or session
+    const sessionInfoEl = document.getElementById('sessionInfo');
+    if (sessionId) {
+        sessionInfoEl.textContent = `Active Session Linked: ${sessionId.slice(0, 8)}...`;
+    } else {
+        sessionInfoEl.textContent = `Warning: No session ID detected in URL. Running standalone.`;
+    }
+
+    // Initialize the camera scanner
+    startScanner();
+});
+
+function startScanner() {
+    const config = { fps: 25, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true };
+    
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+}
+
+async function onScanSuccess(decodedText) {
+    if (isProcessing) return; // Prevent multiple rapid scans of the same code
+    isProcessing = true;
+
+    const studentNumber = decodedText.trim();
+    const resultBox = document.getElementById('scanResult');
+
+    if (!sessionId) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'error-box';
+        resultBox.textContent = `Error: No session ID found in URL. Please open via a Magic Link.`;
+        isProcessing = false;
+        return;
+    }
+    
+    try {
+        // Pause viewfinder briefly while processing
+        html5QrcodeScanner.pause(true);
+
+        resultBox.style.display = 'block';
+        resultBox.className = '';
+        resultBox.textContent = `Processing ${studentNumber}...`;
+        resultBox.style.background = '#e2e3e5';
+        resultBox.style.color = '#383d41';
+
+        // 1. Check if student exists in the database (Blind Scan Auto-Registration)
+        let { data: student, error: studentError } = await supabase
+            .from('students')
+            .select('id, student_number')
+            .eq('student_number', studentNumber)
+            .single();
+
+        if (!student) {
+            // Auto-register student on the fly (Blind Scan feature)
+            const { data: newStudent, error: createError } = await supabase
+                .from('students')
+                .insert([{ student_number: studentNumber }])
+                .select('id, student_number')
+                .single();
+
+            if (createError) throw createError;
+            student = newStudent;
+        }
+
+        // 2. Check for active attendance record (to toggle Check-In vs Check-Out)
+        const { data: activeAttendance, error: attQueryError } = await supabase
+            .from('attendance')
+            .select('id, in_time, out_time')
+            .eq('student_id', student.id)
+            .is('out_time', null)
+            .order('in_time', { ascending: false })
+            .limit(1)
+            .single();
+
+        const now = new Date().toISOString();
+
+        if (activeAttendance) {
+            // Student is currently checked in -> Check them OUT
+            const { error: updateError } = await supabase
+                .from('attendance')
+                .update({ out_time: now })
+                .eq('id', activeAttendance.id);
+
+            if (updateError) throw updateError;
+
+            resultBox.className = 'success-box';
+            resultBox.textContent = `Checked OUT: ${studentNumber}`;
+        } else {
+            // Student is outside -> Check them IN
+            const { error: insertError } = await supabase
+                .from('attendance')
+                .insert([{ 
+                    student_id: student.id, 
+                    session_id: sessionId || null, 
+                    in_time: now 
+                }]);
+
+            if (insertError) throw insertError;
+
+            resultBox.className = 'success-box';
+            resultBox.textContent = `Checked IN: ${studentNumber}`;
+        }
+
+        // Resume scanner after 2 seconds for the next student
+        setTimeout(() => {
+            isProcessing = false;
+            html5QrcodeScanner.resume();
+        }, 1000);
+
+    } catch (err) {
+        console.error('Scan handling error:', err);
+        resultBox.className = 'error-box';
+        resultBox.textContent = `Error: ${err.message || 'Failed to process scan'}`;
+        
+        setTimeout(() => {
+            isProcessing = false;
+            html5QrcodeScanner.resume();
+        }, 3000);
+    }
+}
+
+function onScanFailure(error) {
+    // Non-fatal scanning errors (e.g. QR code not found in current frame) can be ignored
+}
+</script>
+</body>
+</html>

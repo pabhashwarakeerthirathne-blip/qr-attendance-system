@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual Attendance</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header><a href="dashboard.html">← Dashboard</a><strong>Manual Attendance</strong></header>
+<main class="container narrow">
+<div class="card">
+<h1>Mark Attendance</h1>
+<label>Session ID<input id="sessionId" required></label>
+<label>Student Number<input id="studentNumber" placeholder="e.g. SC001" required></label>
+<button id="submit">Mark Attendance</button>
+<div id="result" class="scan-result"></div>
+</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+<script>
+requireRole(['ADMIN','SUPER_ADMIN']).then(() => {
+ document.getElementById('submit').onclick = async () => {
+   const result = document.getElementById('result');
+   try {
+     const r = await markAttendance(
+       document.getElementById('studentNumber').value.trim(),
+       document.getElementById('sessionId').value.trim()
+     );
+     result.textContent = `${r.action}: ${r.message}`;
+     result.className = 'scan-result success';
+   } catch(e) { result.textContent = e.message; result.className='scan-result error'; }
+ };
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Look at the web address for "?session_id=..."
+    const urlParams = new URLSearchParams(window.location.search);
+    const magicSessionId = urlParams.get('session_id');
+
+    // If a session ID is in the link, auto-fill and lock the box
+    if (magicSessionId) {
+        const sessionInput = document.getElementById('sessionId'); 
+        
+        if (sessionInput) {
+            sessionInput.value = magicSessionId;
+            sessionInput.setAttribute('readonly', true); // Prevents mobile keyboard from opening
+            sessionInput.style.backgroundColor = "#e9ecef"; // Grays it out to look locked
+        }
+    }
+});
+</script>
+</body></html>

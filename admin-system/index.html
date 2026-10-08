@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SmartQR Admin Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="center">
+<main class="card auth-card">
+  <h1>SmartQR</h1>
+  <p class="muted">Admin Attendance System</p>
+  <form id="loginForm">
+    <label>Email<input id="email" type="email" required></label>
+    <label>Password<input id="password" type="password" required></label>
+    <button type="submit">Sign in</button>
+    <p id="message" class="message"></p>
+  </form>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('message');
+  msg.textContent = 'Signing in...';
+  try {
+    await login(document.getElementById('email').value, document.getElementById('password').value);
+    location.href = 'dashboard.html';
+  } catch (err) { msg.textContent = err.message; }
+});
+</script>
+</body>
+</html>

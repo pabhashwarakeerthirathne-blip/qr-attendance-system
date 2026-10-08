@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Dashboard</title><link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><strong>SmartQR Admin</strong><button class="secondary" onclick="logout()">Logout</button></header>
+<main class="container">
+<section class="hero"><h1>Attendance Dashboard</h1><p id="userInfo" class="muted"></p></section>
+<section class="grid">
+<a class="action" href="scanner.html"><span>📷</span><strong>QR Scanner</strong><small>Scan student ID cards</small></a>
+<a class="action" href="manual-entry.html"><span>⌨️</span><strong>Manual Entry</strong><small>Enter student number</small></a>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+<script>requireRole(['ADMIN','SUPER_ADMIN']).then(p=>document.getElementById('userInfo').textContent=`Signed in as ${p.full_name} (${p.role})`);</script>
+</body>
+</html>
